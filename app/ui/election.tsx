@@ -165,122 +165,123 @@ export function Election() {
           </Link>
           <Link href="/credits">About</Link>
         </nav>
-        <header className="page-heading">
-          <p className="election-date">October 26, 2026</p>
-          <h1>
-            Mayoral results.
-            <br />
-            On your Lock Screen.
-          </h1>
-          <p>Follow your city as the votes come in.</p>
-        </header>
+        <div className="hero">
+          <header className="page-heading">
+            <p className="election-date">October 26, 2026</p>
+            <h1>
+              Mayoral results.
+              <br />
+              On your Lock Screen.
+            </h1>
+            <p>Follow your city as the votes come in.</p>
+          </header>
 
-        <figure className="activity-preview">
-          <Image
-            src="/previews/toronto-iphone.png"
-            alt="iPhone Lock Screen showing an example Toronto Live Activity with Olivia Chow and Brad Bradford’s photos and sample vote totals."
-            width={1022}
-            height={2090}
-            sizes="(max-width: 328px) calc(100vw - 48px), 280px"
-          />
-          <figcaption>
-            <span>Example · Sample votes</span>
-            <a href="https://webliveactivity.com/builder">
-              WebActivity preview
-            </a>
-          </figcaption>
-        </figure>
-
-        <section
-          className="settings-section"
-          aria-labelledby="activities-heading"
-        >
-          <h2 id="activities-heading" className="section-label">
-            Choose your city
-          </h2>
-          <div className="settings-group city-actions">
-            <Button
-              variant="ghost"
-              className="city-row toronto"
-              onClick={() => openCity("toronto")}
-              aria-label="Follow Toronto mayoral election"
-            >
-              <span className="city-icon toronto-icon" aria-hidden="true">
-                <svg width="23" height="28" viewBox="0 0 23 28" fill="none">
+          <section
+            className="settings-section city-chooser"
+            aria-labelledby="activities-heading"
+          >
+            <h2 id="activities-heading" className="section-label">
+              Choose your city
+            </h2>
+            <div className="settings-group city-actions">
+              <Button
+                variant="ghost"
+                className="city-row toronto"
+                onClick={() => openCity("toronto")}
+                aria-label="Follow Toronto mayoral election"
+              >
+                <span className="city-icon toronto-icon" aria-hidden="true">
+                  <svg width="23" height="28" viewBox="0 0 23 28" fill="none">
+                    <path
+                      d="M11.5 1v7m-3 4h6m-3-4-2 5 2 13 2-13-2-5ZM3 26h17M4 26V16h3m9 10V13h4v13"
+                      stroke="currentColor"
+                      strokeWidth="1.4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+                <span className="city-copy">
+                  <span className="city-name">Toronto</span>
+                  <span className="city-description">Mayoral election</span>
+                </span>
+                <svg
+                  className="chevron"
+                  width="9"
+                  height="15"
+                  viewBox="0 0 9 15"
+                  fill="none"
+                  aria-hidden="true"
+                >
                   <path
-                    d="M11.5 1v7m-3 4h6m-3-4-2 5 2 13 2-13-2-5ZM3 26h17M4 26V16h3m9 10V13h4v13"
+                    d="m2 2 5 5.5L2 13"
                     stroke="currentColor"
-                    strokeWidth="1.4"
+                    strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
                 </svg>
-              </span>
-              <span className="city-copy">
-                <span className="city-name">Toronto</span>
-                <span className="city-description">Mayoral election</span>
-              </span>
-              <svg
-                className="chevron"
-                width="9"
-                height="15"
-                viewBox="0 0 9 15"
-                fill="none"
-                aria-hidden="true"
+              </Button>
+              <Separator className="city-separator" />
+              <Button
+                variant="ghost"
+                className="city-row richmond"
+                onClick={() => openCity("richmond-hill")}
+                aria-label="Follow Richmond Hill mayoral election"
               >
-                <path
-                  d="m2 2 5 5.5L2 13"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </Button>
-            <Separator className="city-separator" />
-            <Button
-              variant="ghost"
-              className="city-row richmond"
-              onClick={() => openCity("richmond-hill")}
-              aria-label="Follow Richmond Hill mayoral election"
-            >
-              <span className="city-icon richmond-icon" aria-hidden="true">
-                <svg width="23" height="25" viewBox="0 0 23 25" fill="none">
+                <span className="city-icon richmond-icon" aria-hidden="true">
+                  <svg width="23" height="25" viewBox="0 0 23 25" fill="none">
+                    <path
+                      d="M3 23h17M5 23V11h13v12M3 11l8.5-7L20 11M9 23v-7h5v7M11.5 4V1"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+                <span className="city-copy">
+                  <span className="city-name">Richmond Hill</span>
+                  <span className="city-description">Mayoral election</span>
+                </span>
+                <svg
+                  className="chevron"
+                  width="9"
+                  height="15"
+                  viewBox="0 0 9 15"
+                  fill="none"
+                  aria-hidden="true"
+                >
                   <path
-                    d="M3 23h17M5 23V11h13v12M3 11l8.5-7L20 11M9 23v-7h5v7M11.5 4V1"
+                    d="m2 2 5 5.5L2 13"
                     stroke="currentColor"
-                    strokeWidth="1.5"
+                    strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
                 </svg>
-              </span>
-              <span className="city-copy">
-                <span className="city-name">Richmond Hill</span>
-                <span className="city-description">Mayoral election</span>
-              </span>
-              <svg
-                className="chevron"
-                width="9"
-                height="15"
-                viewBox="0 0 9 15"
-                fill="none"
-                aria-hidden="true"
-              >
-                <path
-                  d="m2 2 5 5.5L2 13"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </Button>
-          </div>
-          <p className="section-note">
-            Results begin after polls close October 26 at 8 p.m. ET.
-          </p>
-        </section>
+              </Button>
+            </div>
+            <p className="section-note">
+              Results begin after polls close October 26 at 8 p.m. ET.
+            </p>
+          </section>
+          <figure className="activity-preview">
+            <Image
+              src="/previews/toronto-iphone.png"
+              alt="iPhone Lock Screen showing an example Toronto Live Activity with Olivia Chow and Brad Bradford’s photos and sample vote totals."
+              width={1022}
+              height={2090}
+              sizes="(max-width: 360px) 260px, 320px"
+            />
+            <figcaption>
+              <span>Example · Sample votes</span>
+              <a href="https://webliveactivity.com/builder">
+                WebActivity preview
+              </a>
+            </figcaption>
+          </figure>
+        </div>
 
         {CITIES.map((city) => {
           const snapshot = data[city];
