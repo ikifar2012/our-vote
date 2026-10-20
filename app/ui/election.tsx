@@ -177,11 +177,11 @@ export function Election() {
 
         <figure className="activity-preview">
           <Image
-            src="/previews/toronto-versus.png"
-            alt="Example Toronto Live Activity with Olivia Chow and Brad Bradford’s photos, sample vote totals, and polls reporting."
-            width={860}
-            height={368}
-            sizes="(max-width: 478px) calc(100vw - 48px), 430px"
+            src="/previews/toronto-iphone.png"
+            alt="iPhone Lock Screen showing an example Toronto Live Activity with Olivia Chow and Brad Bradford’s photos and sample vote totals."
+            width={1022}
+            height={2090}
+            sizes="(max-width: 328px) calc(100vw - 48px), 280px"
           />
           <figcaption>
             <span>Example · Sample votes</span>
