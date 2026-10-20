@@ -7,6 +7,7 @@ import {
   initials,
   portraits,
   RICHMOND_HILL_CANDIDATES,
+  TORONTO_CANDIDATES,
 } from "@/lib/candidates";
 import { CITIES, ELECTIONS } from "@/lib/elections";
 import { getElectionResults, getLiveActivity } from "@/app/actions/election";
@@ -150,6 +151,18 @@ export function Election() {
   const selectedElection = ELECTIONS[selectedCity];
   const activity = activities[selectedCity];
   const hasSelectedVotes = Boolean(data[selectedCity]?.results?.totalVotes);
+  const candidateNames =
+    selectedCity === "toronto" ? TORONTO_CANDIDATES : RICHMOND_HILL_CANDIDATES;
+  const roster =
+    data[selectedCity]?.results?.candidates ??
+    candidateNames.map((name) => ({
+      name,
+      photo: portraits[name] ?? null,
+    }));
+  const candidatesWithPhotos = roster.filter((candidate) => candidate.photo);
+  const candidatesWithoutPhotos = roster.filter(
+    (candidate) => !candidate.photo,
+  );
   const openCity = (city: City) => {
     setSelectedCity(city);
     setOpened(true);
@@ -437,20 +450,33 @@ export function Election() {
                   : "Lock Screen tracking isn’t available yet. Check back on election night."}
             </p>
           )}
-          {selectedCity === "richmond-hill" && !hasSelectedVotes && (
+          {!hasSelectedVotes && (
             <section
               className="candidate-roster"
-              aria-label="Richmond Hill mayoral candidates"
+              aria-label={`${selectedElection.name} mayoral candidates`}
             >
               <h3>Candidates</h3>
-              {RICHMOND_HILL_CANDIDATES.map((name) => (
-                <div className="roster-row" key={name}>
-                  <Avatar
-                    candidate={{ name, photo: portraits[name] ?? null }}
-                  />
-                  <span>{name}</span>
+              {candidatesWithPhotos.map((candidate) => (
+                <div className="roster-row" key={candidate.name}>
+                  <Avatar candidate={candidate} />
+                  <span>{candidate.name}</span>
                 </div>
               ))}
+              {candidatesWithoutPhotos.length > 0 && (
+                <details className="other-candidates" key={selectedCity}>
+                  <summary>
+                    {candidatesWithPhotos.length > 0
+                      ? "Other candidates"
+                      : "Candidates"}{" "}
+                    ({candidatesWithoutPhotos.length})
+                  </summary>
+                  <ul>
+                    {candidatesWithoutPhotos.map((candidate) => (
+                      <li key={candidate.name}>{candidate.name}</li>
+                    ))}
+                  </ul>
+                </details>
+              )}
               <p className="dialog-note">
                 The two candidates with the most votes will appear in the Live
                 Activity.

@@ -69,6 +69,8 @@ The public page uses **Server Actions** in `app/actions/election.ts` for results
 
 ## Candidate photos
 
+Before votes arrive, both city dialogs show candidate rosters with available portraits. Toronto’s remaining names are in an expandable list. Saved feed snapshots take precedence over the fallback rosters in `lib/candidates.ts`; Toronto’s fallback was checked against the official mayoral feed on October 20, 2026. Keep it current if the City changes the list. Roster display does not fetch upstream or select leaders.
+
 The homepage includes an iPhone Lock Screen mockup of the Versus activity captured from the [WebActivity builder](https://webliveactivity.com/builder). Its caption identifies invented sample totals. The image is served locally, so viewing it requires no provider account, iframe, or API call. It is separate from election snapshots and phone delivery. See [PHOTO-CREDITS.md](PHOTO-CREDITS.md) for the portraits used in the composite.
 
 Attributed 400×400 WebP portraits are included for Olivia Chow, Brad Bradford, David West, Domenic Bardari, and Holo Devnani. Bardari and Devnani’s sources do not advertise open photo licenses; their photo rights are separate from MIT. See [PHOTO-CREDITS.md](PHOTO-CREDITS.md) for exact sources, transformations, and rights. Devnani’s available source is low-resolution. They do not affect ranking. Other candidates show initials if they enter the top two; add a reusable photo to `public/candidates/`, register its exact feed name in `lib/candidates.ts`, and update `/credits` and `PHOTO-CREDITS.md`. There is no runtime scraping or guessing at identities.

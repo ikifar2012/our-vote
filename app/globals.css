@@ -580,6 +580,32 @@ h1 {
   margin-top: 16px;
   font-size: 12px;
 }
+.other-candidates {
+  margin-top: 16px;
+  font-size: 14px;
+}
+.other-candidates summary {
+  cursor: pointer;
+  padding: 6px 0;
+  color: var(--muted-foreground);
+}
+.other-candidates summary:focus-visible {
+  outline: 3px solid #64aaff;
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+.other-candidates ul {
+  max-height: 200px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 0;
+}
+.other-candidates li {
+  padding: 7px 0;
+  line-height: 1.5;
+}
 .site-footer nav {
   flex-wrap: wrap;
   gap: 10px;
