@@ -8,11 +8,19 @@ export default function Credits() {
       <h2>Election results</h2>
       <p>
         Unofficial results are supplied by{" "}
-        <a href="https://www.toronto.ca/city-government/elections/election-results-reports/election-results/live-results-information-for-media/">
+        <a
+          href="https://www.toronto.ca/city-government/elections/election-results-reports/election-results/live-results-information-for-media/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           Toronto Elections
         </a>{" "}
         and the{" "}
-        <a href="https://electionresults.richmondhill.ca/">
+        <a
+          href="https://electionresults.richmondhill.ca/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           City of Richmond Hill
         </a>
         . Our Vote is an independent project and is not affiliated with any city

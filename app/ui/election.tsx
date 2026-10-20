@@ -377,9 +377,19 @@ export function Election() {
 
         <footer className="site-footer">
           <nav aria-label="More information">
-            <a href={ELECTIONS.toronto.resultsUrl}>Toronto results</a>
+            <a
+              href={ELECTIONS.toronto.resultsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Toronto results
+            </a>
             <span aria-hidden="true" />
-            <a href={ELECTIONS["richmond-hill"].resultsUrl}>
+            <a
+              href={ELECTIONS["richmond-hill"].resultsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               Richmond Hill results
             </a>
             <span aria-hidden="true" />
@@ -387,7 +397,7 @@ export function Election() {
           </nav>
           <p>
             An independent, open-source project by{" "}
-            <a href="https://mstep.dev">mstep</a>.
+            <a href="https://mstep.dev">Matheson Steplock</a>.
           </p>
         </footer>
       </main>
@@ -447,7 +457,12 @@ export function Election() {
               </p>
             </section>
           )}
-          <a className="source-link" href={selectedElection.informationUrl}>
+          <a
+            className="source-link"
+            href={selectedElection.informationUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             {selectedElection.name} election information
           </a>
         </DialogContent>
