@@ -50,6 +50,10 @@ The app is integration-ready; **a real WebActivity account, selected plan, API k
 
 The public page uses **Server Actions** in `app/actions/election.ts` for results and activity availability. These actions only read state; public requests cannot create activities or send pushes. The only custom HTTP endpoint is `/api/portrait`, which serves a PNG initials fallback for phones without an available candidate photo.
 
+## Test actual Live Activities before election night
+
+Run `bun run test:setup`, restart the web server, and open `/test`. Sign in with `TEST_ACCESS_TOKEN` from your ignored environment file. Configure Postgres, `WEBACTIVITY_API_KEY`, and a public HTTPS `SITE_URL` for phone delivery. Start a test, add it to your phone, and send sample stages using the private buttons. Each city has its own test audience and saved state; real races are unaffected. `LIVE_ACTIVITIES_ENABLED` can stay off. See [the full test setup and cleanup instructions](docs/activity-test.md), including Docker usage.
+
 ## Results and delivery behavior
 
 - Toronto official feed: https://mediaresults.toronto.ca/results/unofficialresult.json

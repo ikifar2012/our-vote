@@ -18,6 +18,8 @@
     "format:check": "bun --bun prettier --check .",
     "worker": "bun scripts/worker.ts",
     "sync": "bun scripts/worker.ts --once",
+    "test:setup": "bun scripts/setup-activity-test.ts",
+    "activity:test": "bun scripts/activity-test.ts",
     "db:generate": "bun --bun drizzle-kit generate",
     "db:migrate": "bun scripts/migrate.ts"
   },

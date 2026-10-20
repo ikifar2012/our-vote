@@ -11,7 +11,7 @@ FROM base AS build
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
 RUN bun run build
-RUN bun build scripts/worker.ts scripts/migrate.ts --target=bun --outdir=dist
+RUN bun build scripts/worker.ts scripts/migrate.ts scripts/activity-test.ts --target=bun --outdir=dist
 
 FROM base AS runtime
 ENV NODE_ENV=production PORT=3000 HOSTNAME=0.0.0.0

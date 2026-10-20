@@ -1,0 +1,66 @@
+# Internal Live Activity testing
+
+`/test` controls **actual WebActivity delivery** with fictional results. It is private, disabled by default, and absent from public navigation. This is not a browser simulation or a switch that changes the public election page.
+
+## Local setup
+
+```sh
+bun run test:setup
+bun run db:migrate
+bun run dev
+```
+
+The setup command enables test mode and generates a random access token in ignored `.env.local`. It preserves your other settings and does not print the token. Open that file locally to copy `TEST_ACCESS_TOKEN` into the login form at **http://localhost:3000/test**. If the web server was already running, restart it after setup. Running setup again preserves an existing valid token.
+
+Real delivery also requires:
+
+- `WEBACTIVITY_API_KEY`: your provider key, kept in a server-only environment file.
+- `DATABASE_URL`: a migrated Postgres database. Test storage uses the existing schema; no new migration is needed.
+- `SITE_URL`: a public HTTPS site serving this project's candidate photos. Your phone cannot fetch images from localhost. The test controls themselves can run locally while photos come from your deployed site.
+
+`LIVE_ACTIVITIES_ENABLED` can stay `false`. Test delivery has its own `TEST_MODE_ENABLED` switch and can run before election night.
+
+## On a VPS / Docker Compose
+
+Put `TEST_MODE_ENABLED=true` and a random `TEST_ACCESS_TOKEN` of at least 32 characters in the deployment `.env`, alongside the database/provider settings. The local setup command's `.env.local` is not read by Compose's `env_file: .env`.
+
+Rebuild with `docker compose up -d --build`, open **https://ourvote.mstep.dev/test**, and sign in with the token. Production sessions require HTTPS. The page and actions check the flag and token configuration on every request. Login lasts four hours; rotating the token invalidates existing sessions. Do not put the token in a URL, a client environment variable, or Git.
+
+## Phone check
+
+1. Sign in, choose Toronto or Richmond Hill, and click **First results**.
+2. The provider's real launch button appears. Open it on your phone, or scan its QR code from a computer. iPhone uses the App Clip; Android needs WebActivity's app.
+3. Check that the native card says **TEST** and that the two photos, abbreviated names, exact vote totals, and reporting percentage fit.
+4. Wait for the one-minute cooldown, then click **Lead change**. Check that the order and totals change on the phone. A photo/candidate change can restart the card and alert.
+5. Try **Updates delayed** and **All reported**. The final state says reported, not winner. **Waiting** sends a waiting/progress card without fabricated zero-vote leaders.
+6. Click **End this city's test** to remove its test activities. Ending is available during cooldown. Repeat for the other city if needed.
+
+Updates are manual; there is no background test worker or auto-play. The public election worker can keep running. Sending the same successful stage again is a no-op. Sends use quiet priority 5 and a persisted one-minute cooldown, including on failure. The provider may take up to 45 seconds to deliver; push usage still counts against your account allowance. Use only your testing devices. A failed or ambiguous provider response can require retrying and can result in duplicate delivery; the API does not document an idempotency key.
+
+**Updates delayed** keeps the last sent sample totals and changes the displayed status; with no prior totals it uses a fixed sample. It is a fictional display scenario, not an induced outage. It does not change the real collector's backoff, source timestamps, or stale-state checks.
+
+## Optional terminal controls
+
+```sh
+bun run activity:test --city toronto --stage first
+bun run activity:test --city toronto --stage lead-change
+bun run activity:test --city toronto --stage end
+```
+
+The CLI uses the same gates, state builder, dedicated targets, database lock, and cooldown as the private page. It requires access to the server environment, but does not require a browser session. `--help` lists stages. A command without arguments prints help and sends nothing.
+
+From Compose, use the bundled command:
+
+```sh
+docker compose exec web bun dist/activity-test.js --city richmond-hill --stage first
+```
+
+The browser page shows the last successfully sent state. Refresh it after sending from another terminal or browser. A start/update failure keeps the last saved successful result and reports an error.
+
+## Isolation and cleanup
+
+Test row IDs are `test-toronto-v1` and `test-richmond-hill-v1`. Containers and groups are `our-vote-test-toronto-v1` and `our-vote-test-richmond-hill-v1`. Their advisory locks are distinct too. Callers can choose only a validated city and stage; they cannot supply groups, row IDs, containers, arbitrary state, or photo URLs. The public election worker iterates only the real election registry. Test generation never calls either city's results feed.
+
+End both cities' test activities **before** disabling test mode. Then set `TEST_MODE_ENABLED=false` and restart the web process. `/test` becomes unavailable and its Server Actions reject requests, including existing signed-in sessions. Real worker settings and real subscription links remain unchanged. Keep the flag off when you are not testing. Saved test rows can remain in Postgres; the real worker ignores them.
+
+No automated test suite is introduced by this feature. Account creation, real provider calls, and physical-phone verification must be performed with your credentials and devices.

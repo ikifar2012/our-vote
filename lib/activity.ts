@@ -66,7 +66,7 @@ export function stateHash(state: ReturnType<typeof activityState>) {
   return createHash("sha256").update(JSON.stringify(state)).digest("hex");
 }
 export async function activityRequest(
-  path: "start" | "update",
+  path: "start" | "update" | "end",
   body: object,
 ): Promise<Record<string, unknown>> {
   const response = await fetch(`https://api.webliveactivity.com/api/${path}`, {

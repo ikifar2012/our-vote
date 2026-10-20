@@ -610,3 +610,127 @@ h1 {
   flex-wrap: wrap;
   gap: 10px;
 }
+
+.test-page {
+  width: min(100%, 1080px);
+  margin: 0 auto;
+  padding: 0 32px 40px;
+}
+.test-heading {
+  margin: 32px 0 40px;
+}
+.test-label {
+  display: block;
+  margin-bottom: 16px;
+  color: var(--muted-foreground);
+  font-size: 14px;
+}
+.test-heading h1,
+.test-login h1 {
+  font-size: clamp(32px, 5vw, 48px);
+  letter-spacing: -1.8px;
+}
+.test-heading > p,
+.test-login > p {
+  color: var(--muted-foreground);
+  line-height: 1.6;
+}
+.test-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 48px;
+}
+.test-page h2 {
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0 0 18px;
+}
+.test-page h3 {
+  font-size: 15px;
+  font-weight: 500;
+  margin: 0 0 14px;
+}
+.test-city-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 32px;
+}
+.test-page [data-slot="button"] {
+  min-height: 48px;
+  height: auto;
+  padding: 12px 18px;
+  white-space: normal;
+}
+.test-stages {
+  display: grid;
+  gap: 10px;
+}
+.test-end {
+  width: 100%;
+  margin-top: 24px;
+}
+.test-caption {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--muted-foreground);
+  margin: 16px 0;
+}
+.test-message {
+  line-height: 1.6;
+}
+.test-phone {
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  align-self: start;
+  min-width: 0;
+}
+.test-snapshot {
+  margin-top: 28px;
+}
+.test-snapshot .result-row {
+  padding-inline: 0;
+  flex-wrap: wrap;
+}
+.test-login {
+  max-width: 540px;
+  padding-top: 64px;
+}
+.test-login h1 {
+  margin: 40px 0 20px;
+}
+.test-login form {
+  display: grid;
+  gap: 16px;
+  margin-top: 32px;
+}
+.test-login input {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 10px;
+  border: 1px solid var(--input);
+  padding: 12px;
+  background: var(--surface);
+  color: var(--foreground);
+  font: inherit;
+}
+.test-login input:focus-visible {
+  outline: 3px solid #64aaff;
+  outline-offset: 3px;
+}
+@media (max-width: 760px) {
+  .test-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+  }
+}
+@media (max-width: 520px) {
+  .test-page {
+    padding-inline: 20px;
+  }
+  .test-phone {
+    padding: 20px;
+  }
+}
