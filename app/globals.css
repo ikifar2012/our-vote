@@ -134,6 +134,31 @@ h1 {
 .settings-section + .settings-section {
   margin-top: 30px;
 }
+.activity-preview {
+  width: min(100%, 430px);
+  margin: 0 auto 32px;
+}
+.activity-preview > img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: 30px;
+}
+.activity-preview figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px 12px;
+  margin: 10px 8px 0;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.activity-preview figcaption a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 .section-label {
   margin: 0 16px 9px;
   display: flex;

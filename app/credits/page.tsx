@@ -79,6 +79,13 @@ export default function Credits() {
         </a>{" "}
         before adding one.
       </p>
+      <p>
+        The homepage mockup was captured from WebActivity’s{" "}
+        <a href="https://webliveactivity.com/builder">Versus builder</a> with
+        our candidate portraits. Its vote totals and reporting percentage are
+        invented examples, not election results. The portraits retain the
+        credits and licenses above.
+      </p>
       <h2>Your privacy</h2>
       <p>
         Our Vote has no accounts, advertising, or analytics. We store shared

@@ -175,6 +175,22 @@ export function Election() {
           <p>Follow your city as the votes come in.</p>
         </header>
 
+        <figure className="activity-preview">
+          <Image
+            src="/previews/toronto-versus.png"
+            alt="Example Toronto Live Activity with Olivia Chow and Brad Bradford’s photos, sample vote totals, and polls reporting."
+            width={860}
+            height={368}
+            sizes="(max-width: 478px) calc(100vw - 48px), 430px"
+          />
+          <figcaption>
+            <span>Example · Sample votes</span>
+            <a href="https://webliveactivity.com/builder">
+              WebActivity preview
+            </a>
+          </figcaption>
+        </figure>
+
         <section
           className="settings-section"
           aria-labelledby="activities-heading"

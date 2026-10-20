@@ -2,6 +2,8 @@
 
 Photos are not covered by the MIT code license and do not imply endorsement.
 
+`public/previews/toronto-versus.png` is a screenshot of the [WebActivity builder](https://webliveactivity.com/builder), configured with our Toronto portraits and invented sample totals. The editor, phone wallpaper, and preview fades are excluded from the capture. It includes the Olivia Chow and Brad Bradford photos credited below; their licenses still apply to those photos in the composite. The preview is not an election result or an MIT-licensed original illustration.
+
 - `public/candidates/olivia-chow.webp`: [Olivia Chow at the 2024 Toronto International Film Festival](https://commons.wikimedia.org/wiki/File:Olivia_Chow_at_the_2024_Toronto_International_Film_Festival.jpg), Frank Sun / WikiPortraits, [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Cropped to a square, resized to 400×400, and converted to WebP. Adaptation licensed CC BY-SA 4.0.
 - `public/candidates/brad-bradford.webp`: [Brad Bradford 2026 headshot](https://commons.wikimedia.org/wiki/File:BB2026_Headshot1.jpg), Laryssa WH, [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/). Cropped to a square, resized to 400×400, and converted to WebP.
 

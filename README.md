@@ -69,6 +69,8 @@ The public page uses **Server Actions** in `app/actions/election.ts` for results
 
 ## Candidate photos
 
+The homepage includes a static Versus mockup captured from the [WebActivity builder](https://webliveactivity.com/builder). Its caption identifies invented sample totals. The image is served locally, so viewing it requires no provider account, iframe, or API call. It is separate from election snapshots and phone delivery. See [PHOTO-CREDITS.md](PHOTO-CREDITS.md) for the portraits used in the composite.
+
 Attributed 400×400 WebP portraits are included for Olivia Chow, Brad Bradford, David West, Domenic Bardari, and Holo Devnani. Bardari and Devnani’s sources do not advertise open photo licenses; their photo rights are separate from MIT. See [PHOTO-CREDITS.md](PHOTO-CREDITS.md) for exact sources, transformations, and rights. Devnani’s available source is low-resolution. They do not affect ranking. Other candidates show initials if they enter the top two; add a reusable photo to `public/candidates/`, register its exact feed name in `lib/candidates.ts`, and update `/credits` and `PHOTO-CREDITS.md`. There is no runtime scraping or guessing at identities.
 
 ## Verification
