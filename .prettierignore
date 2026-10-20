@@ -1,0 +1,13 @@
+node_modules/
+.next/
+out/
+build/
+dist/
+coverage/
+bun.lock
+next-env.d.ts
+drizzle/
+public/
+app/icon.svg
+AGENTS.md
+.env*

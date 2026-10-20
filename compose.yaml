@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ourvote
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ourvote
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ourvote -d ourvote"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+  migrate:
+    build: .
+    image: our-vote:local
+    command: ["bun", "dist/migrate.js"]
+    environment:
+      DATABASE_URL: postgres://ourvote:${POSTGRES_PASSWORD}@postgres:5432/ourvote
+    depends_on:
+      postgres:
+        condition: service_healthy
+  web:
+    image: our-vote:local
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://ourvote:${POSTGRES_PASSWORD}@postgres:5432/ourvote
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+  worker:
+    image: our-vote:local
+    build: .
+    command: ["bun", "dist/worker.js"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://ourvote:${POSTGRES_PASSWORD}@postgres:5432/ourvote
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+volumes:
+  postgres_data:

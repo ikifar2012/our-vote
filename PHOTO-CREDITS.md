@@ -1,0 +1,12 @@
+# Candidate photographs
+
+Photos are not covered by the MIT code license and do not imply endorsement.
+
+- `public/candidates/olivia-chow.webp`: [Olivia Chow at the 2024 Toronto International Film Festival](https://commons.wikimedia.org/wiki/File:Olivia_Chow_at_the_2024_Toronto_International_Film_Festival.jpg), Frank Sun / WikiPortraits, [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Cropped to a square, resized to 400×400, and converted to WebP. Adaptation licensed CC BY-SA 4.0.
+- `public/candidates/brad-bradford.webp`: [Brad Bradford 2026 headshot](https://commons.wikimedia.org/wiki/File:BB2026_Headshot1.jpg), Laryssa WH, [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/). Cropped to a square, resized to 400×400, and converted to WebP.
+
+- `public/candidates/david-west.webp`: [David West mayor](https://commons.wikimedia.org/wiki/File:David_West_mayor.jpg), OhanaUnited, [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Cropped around his face, resized to 400×400, and converted to WebP. Adaptation licensed CC BY-SA 4.0.
+- `public/candidates/domenic-bardari.webp`: [Domenic Bardari campaign about page](https://domenicformayor.ca/about-domenic/), [source photograph](https://domenicformayor.ca/wp-content/uploads/2026/08/13700-scaled.jpg). Photographer and reuse license are not stated. Cropped to a headshot, resized to 400×400, and converted to WebP. All rights remain with the owner; this is **not an MIT-licensed asset**. Confirm reuse permission before redistributing this photo separately or under an open license.
+- `public/candidates/holo-devnani.webp`: [Holo Devnani’s Strong Richmond Hill candidate profile](https://strongrh.ca/candidate/devnani-holo/), [source photograph](https://strongrh.ca/wp-content/uploads/2026/06/Devnani-Holo-1.webp). Photographer and reuse license are not stated. Cropped and resized to 400×400 WebP from a low-resolution 127×190 source. All rights remain with the owner; this is **not an MIT-licensed asset**. Confirm reuse permission before redistributing this photo separately or under an open license.
+
+These portraits are available; they do not determine who appears. The feed determines the top two. Other candidates get a generated initials image until an attributed reusable photo is added to `lib/candidates.ts` and `/credits`. Keep filenames stable: WebActivity restarts cards when image URLs change.
