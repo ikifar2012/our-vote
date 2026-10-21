@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
   },
   cacheComponents: true,
   partialPrefetching: true,
+  allowedDevOrigins: ['pointer-winning-clusters-outstanding.trycloudflare.com'],
 };
 
 export default nextConfig;
