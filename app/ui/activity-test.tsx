@@ -15,6 +15,7 @@ import { CITIES, ELECTIONS } from "@/lib/elections";
 import { initials } from "@/lib/candidates";
 import type { TestStatus } from "@/lib/activity-test";
 import type { City } from "@/lib/types";
+import { AndroidLaunch } from "@/app/ui/android-launch";
 
 const number = new Intl.NumberFormat("en-CA");
 
@@ -202,9 +203,12 @@ export function ActivityTest() {
                 height="110"
                 referrerPolicy="strict-origin-when-cross-origin"
               />
+              <AndroidLaunch key={status.embedUrl} embedUrl={status.embedUrl} />
               <p className="test-caption">
-                Tap on your phone, or scan the QR code from your computer. The
-                native activity is labelled TEST.
+                On your iPhone, tap the button above, then Open on the App Clip
+                card. For Android, tap “Using Android?”. Use a QR code when
+                viewing this page on a computer. The native activity is labelled
+                TEST.
               </p>
             </>
           ) : (

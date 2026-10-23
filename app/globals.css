@@ -439,6 +439,24 @@ h1 {
   color: var(--muted-foreground);
   margin: 0;
 }
+.android-launch {
+  margin: 12px 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--muted-foreground);
+}
+.android-launch summary {
+  cursor: pointer;
+  color: var(--foreground);
+}
+.android-launch img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: 10px solid white;
+  background: white;
+  margin: 12px auto;
+}
 .source-link {
   font-size: 13px;
   color: #d7d7dc;

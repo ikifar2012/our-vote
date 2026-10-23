@@ -89,7 +89,11 @@ export function extractEmbed(result: Record<string, unknown>) {
   const links = result.links as { iframe?: string } | undefined;
   const src = links?.iframe?.match(/src=["']([^"']+)["']/)?.[1];
   if (!src) throw new Error("WebActivity did not return an embed URL");
-  const url = new URL(src.replaceAll("&amp;", "&"));
+  return activityEmbedUrl(src.replaceAll("&amp;", "&"));
+}
+
+export function activityEmbedUrl(src: string) {
+  const url = new URL(src);
   if (
     url.origin !== "https://api.webliveactivity.com" ||
     url.pathname !== "/embed/button"
@@ -97,5 +101,8 @@ export function extractEmbed(result: Record<string, unknown>) {
     throw new Error("Unexpected embed URL");
   url.searchParams.set("theme", "dark");
   url.searchParams.set("color", "FFFFFF");
+  // The provider's default QR destination uses an obsolete development domain.
+  // This mode makes iPhone buttons and Apple QR codes use Apple's App Clip URL.
+  url.searchParams.set("launch", "appclip");
   return url.href;
 }

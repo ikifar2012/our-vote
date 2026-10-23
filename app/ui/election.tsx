@@ -11,6 +11,7 @@ import {
 } from "@/lib/candidates";
 import { CITIES, ELECTIONS } from "@/lib/elections";
 import { getElectionResults, getLiveActivity } from "@/app/actions/election";
+import { AndroidLaunch } from "@/app/ui/android-launch";
 import type {
   ActivityStatus,
   Candidate,
@@ -435,10 +436,16 @@ export function Election() {
                 height="110"
                 referrerPolicy="strict-origin-when-cross-origin"
               />
+              <AndroidLaunch
+                key={activity.embedUrl}
+                embedUrl={activity.embedUrl}
+              />
               <p className="dialog-note">
-                On a computer, scan the QR code with your phone. Updates arrive
-                up to every {activity.intervalMinutes} minutes when results
-                change. A change in candidates or photos may alert your phone.
+                On your iPhone, tap the button above, then Open on the App Clip
+                card. For Android, tap “Using Android?”. On a computer, scan the
+                QR code for your phone. Updates arrive up to every{" "}
+                {activity.intervalMinutes} minutes when results change. A change
+                in candidates or photos may alert your phone.
               </p>
             </>
           ) : (

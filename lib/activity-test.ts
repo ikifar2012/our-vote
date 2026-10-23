@@ -2,7 +2,12 @@ import { createHash } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
 import { getDb } from "../db";
 import { elections } from "../db/schema";
-import { activityRequest, activityState, extractEmbed } from "./activity";
+import {
+  activityEmbedUrl,
+  activityRequest,
+  activityState,
+  extractEmbed,
+} from "./activity";
 import { ELECTIONS } from "./elections";
 import { TEST_TARGETS, testResults, type TestStage } from "./test-scenarios";
 import type { City, Results } from "./types";
@@ -73,7 +78,7 @@ export async function readTestStatus(city: City): Promise<TestStatus> {
     return {
       ready: true,
       message: null,
-      embedUrl: row?.embedUrl ?? null,
+      embedUrl: row?.embedUrl ? activityEmbedUrl(row.embedUrl) : null,
       results: row?.results ?? null,
       publishedAt: row?.publishedAt?.toISOString() ?? null,
       nextSendAt: row?.nextFetchAt?.toISOString() ?? null,

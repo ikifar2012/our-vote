@@ -1,6 +1,10 @@
 "use server";
 
-import { activityEnabled, pushIntervalSeconds } from "@/lib/activity";
+import {
+  activityEmbedUrl,
+  activityEnabled,
+  pushIntervalSeconds,
+} from "@/lib/activity";
 import { resultsAreStale } from "@/lib/collection";
 import { isCity } from "@/lib/elections";
 import { getPublicResults, readElection } from "@/lib/results";
@@ -38,8 +42,8 @@ export async function getLiveActivity(
         return body;
       body.status = "waiting";
       if (row?.embedUrl) {
+        body.embedUrl = activityEmbedUrl(row.embedUrl);
         body.status = "ready";
-        body.embedUrl = row.embedUrl;
       }
     }
   } catch {
