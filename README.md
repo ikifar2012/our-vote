@@ -38,6 +38,12 @@ The multi-stage Docker image uses the official Bun 1.4.0 image for installation,
 
 For an upgrade: pull the code, run `docker compose up -d --build`, and inspect the migration and worker logs. Do not use `docker compose down -v` unless you intend to delete the database.
 
+## Docker images on GHCR
+
+`.github/workflows/docker-build.yml` uses the same publishing workflow as `ikifar2012/smtpbound`. Pushes to `main` build the Dockerfile and publish `ghcr.io/ikifar2012/our-vote:main`. The workflow can also be run manually from GitHub Actions. It uses the repository's `GITHUB_TOKEN` with package write permission; no separate registry credentials are needed in repository secrets.
+
+The image contains the web server, worker, and migration entrypoints. Compose currently builds and uses `our-vote:local`; adding this workflow does not switch an existing deployment to GHCR or deploy it automatically. Package visibility is managed separately in GitHub Packages; a private package requires authentication to pull.
+
 ## Enable Lock Screen tracking
 
 The app is integration-ready; **a real WebActivity account, selected plan, API key, and phone verification are still required**. Deployment and real pushes have not been performed on your behalf.
