@@ -20,7 +20,9 @@ export const elections = pgTable("elections", {
   lastDeliveryAttemptAt: timestamp("last_delivery_attempt_at", {
     withTimezone: true,
   }),
-  finalDeliveryRetries: integer("final_delivery_retries").notNull().default(0),
+  lastDeliveryAttemptHash: text("last_delivery_attempt_hash"),
+  // Retain the SQL name so existing retry counts survive this broader policy.
+  deliveryRetries: integer("final_delivery_retries").notNull().default(0),
   nextFetchAt: timestamp("next_fetch_at", { withTimezone: true }),
   failureCount: integer("failure_count").notNull().default(0),
   collectionPaused: boolean("collection_paused").notNull().default(false),

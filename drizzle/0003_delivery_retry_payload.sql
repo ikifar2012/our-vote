@@ -1,0 +1,1 @@
+ALTER TABLE "elections" ADD COLUMN "last_delivery_attempt_hash" text;

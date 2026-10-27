@@ -9,7 +9,6 @@ import {
   failureState,
   nextFetchAt,
   resultsAreStale,
-  resultsFullyReported,
 } from "../lib/collection";
 import {
   activityEnabled,
@@ -24,7 +23,7 @@ import type { City } from "../lib/types";
 
 loadEnvConfig(process.cwd());
 const db = getDb();
-const MAX_FINAL_RETRIES = 3;
+const MAX_DELIVERY_RETRIES = 3;
 if (!db) throw new Error("Set DATABASE_URL before starting the worker.");
 const requestedCity = process.argv.includes("--city")
   ? process.argv[process.argv.indexOf("--city") + 1]
@@ -104,13 +103,12 @@ async function tick(city: City): Promise<boolean> {
       ? waitingActivityState(city)
       : activityState(results, city);
     const hash = stateHash(state);
-    const unchanged = hash === previous.publishedHash;
-    const finalRetry =
-      unchanged &&
-      !waiting &&
-      resultsFullyReported(results) &&
-      previous.finalDeliveryRetries < MAX_FINAL_RETRIES;
-    if (unchanged && !finalRetry) return true;
+    // Track attempts by payload, including requests that the provider rejected.
+    // Existing rows fall back to their last published payload until first retried.
+    const retry =
+      hash === (previous.lastDeliveryAttemptHash ?? previous.publishedHash);
+    if (retry && previous.deliveryRetries >= MAX_DELIVERY_RETRIES) return true;
+    const deliveryRetries = retry ? previous.deliveryRetries + 1 : 0;
     // Deliver the first count promptly to phones already following the waiting card.
     const firstResults =
       !waiting &&
@@ -118,6 +116,7 @@ async function tick(city: City): Promise<boolean> {
     const lastAttempt = previous.lastDeliveryAttemptAt ?? previous.publishedAt;
     const bypassCooldown =
       firstResults &&
+      !retry &&
       (!lastAttempt ||
         (previous.publishedAt && lastAttempt <= previous.publishedAt));
     if (
@@ -132,9 +131,8 @@ async function tick(city: City): Promise<boolean> {
         .update(elections)
         .set({
           lastDeliveryAttemptAt: new Date(),
-          ...(finalRetry
-            ? { finalDeliveryRetries: previous.finalDeliveryRetries + 1 }
-            : {}),
+          lastDeliveryAttemptHash: hash,
+          deliveryRetries,
         })
         .where(eq(elections.id, election.id));
       if (!previous.activityId) {
@@ -158,7 +156,6 @@ async function tick(city: City): Promise<boolean> {
             embedUrl: extractEmbed(started),
             publishedHash: hash,
             publishedAt: new Date(),
-            finalDeliveryRetries: 0,
           })
           .where(eq(elections.id, election.id));
       } else {
@@ -169,7 +166,7 @@ async function tick(city: City): Promise<boolean> {
           state,
         });
         console.log(
-          `${election.name}: ${finalRetry ? `final result retry ${previous.finalDeliveryRetries + 1}/${MAX_FINAL_RETRIES}` : "activity update"}; provider targeted ${typeof sent.targeted === "number" ? sent.targeted : "unknown"} activities.`,
+          `${election.name}: ${retry ? `delivery retry ${deliveryRetries}/${MAX_DELIVERY_RETRIES}` : "activity update"}; provider targeted ${typeof sent.targeted === "number" ? sent.targeted : "unknown"} activities.`,
         );
         await activityRequest("update", {
           widgetContainerId: election.container,
@@ -182,9 +179,6 @@ async function tick(city: City): Promise<boolean> {
           .set({
             publishedHash: hash,
             publishedAt: new Date(),
-            finalDeliveryRetries: finalRetry
-              ? previous.finalDeliveryRetries + 1
-              : 0,
           })
           .where(eq(elections.id, election.id));
       }
