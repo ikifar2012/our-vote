@@ -58,7 +58,7 @@ WEBACTIVITY_API_KEY=<your existing provider key>
 PUSH_INTERVAL_SECONDS=300
 ```
 
-Keep credentials in Dokploy's environment settings. Redeploy after pulling the new image or changing variables. Startup logs should show **Database migrations applied**, **Starting web server**, and **Starting results worker**, followed by per-city fetch logs. Missing `DATABASE_URL` or failed migrations stop startup instead of serving an empty production site. Live Activity creation still waits for the first nonzero official results after polls close; the worker collects results even when Live Activities are disabled.
+Keep credentials in Dokploy's environment settings. Redeploy after pulling the new image or changing variables. Startup logs should show **Database migrations applied**, **Starting web server**, and **Starting results worker**, followed by per-city fetch logs. Missing `DATABASE_URL` or failed migrations stop startup instead of serving an empty production site. With Live Activities enabled, the worker creates a waiting activity before the first count so people can follow early; it collects results even when Live Activities are disabled.
 
 ## Enable Lock Screen tracking
 
@@ -67,7 +67,7 @@ The app is integration-ready; **a real WebActivity account, selected plan, API k
 1. Create a WebActivity account and explicitly select its Free plan if you want no paid usage. Confirm its current allowance in the dashboard: the pricing page calls usage “calls”, while the delivery docs describe **pushes per receiving phone**, including group sends. Budget for per-phone usage until the provider confirms otherwise.
 2. Put the key in `WEBACTIVITY_API_KEY` in `.env` and set `LIVE_ACTIVITIES_ENABLED=true`. Set `SITE_URL=https://ourvote.mstep.dev` so phones can download public HTTPS portraits.
 3. Restart the web and worker processes (`docker compose up -d --force-recreate web worker` with Compose).
-4. The worker creates a separate reusable launch button for each city after **October 26, 2026 at 8 p.m. America/Toronto**, once nonzero votes arrive. Before then each city button explains when tracking opens. A zeroed feed does not produce alphabetical “leaders”.
+4. After a successful source fetch, the worker creates a separate reusable launch button for each city, even before the first count. Early followers see **Waiting for official results**, without candidate rankings or invented votes. After **October 26, 2026 at 8 p.m. America/Toronto**, the same activity automatically switches to the leading candidates when nonzero votes arrive. The first count bypasses the normal push cooldown; later changed counts follow the configured interval. Followers do not need to add the activity again.
 5. On election night, use a physical iPhone to add the activity, verify candidate names/photos and vote totals fit, and verify a subsequent result update. Android requires the WebActivity app; iPhone can use its App Clip.
 
 The public page uses **Server Actions** in `app/actions/election.ts` for results and activity availability. These actions only read state; public requests cannot create activities or send pushes. The only custom HTTP endpoint is `/api/portrait`, which serves a PNG initials fallback for phones without an available candidate photo.

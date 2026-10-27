@@ -27,6 +27,18 @@ function activityName(name: string) {
   const abbreviated = `${parts[0][0]}. ${surname}`;
   return abbreviated.length <= 12 ? abbreviated : surname.slice(0, 12);
 }
+export function waitingActivityState(city: City = "toronto") {
+  return {
+    layout: "progress",
+    primaryText: `${ELECTIONS[city].name} mayoral results`,
+    secondaryText: "Waiting for official results",
+    progress: 0,
+    backgroundColorHex: "#000000",
+    accentColorHex: "#FFFFFF",
+    actionLabel: "Results",
+    actionURL: process.env.SITE_URL || "https://ourvote.mstep.dev",
+  };
+}
 export function activityState(results: Results, city: City = "toronto") {
   const election = ELECTIONS[city];
   const [left, right] = results.candidates;
@@ -62,7 +74,10 @@ export function activityState(results: Results, city: City = "toronto") {
     },
   };
 }
-export function stateHash(state: ReturnType<typeof activityState>) {
+export function stateHash(
+  state:
+    ReturnType<typeof activityState> | ReturnType<typeof waitingActivityState>,
+) {
   return createHash("sha256").update(JSON.stringify(state)).digest("hex");
 }
 export async function activityRequest(

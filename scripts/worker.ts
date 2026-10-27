@@ -17,6 +17,7 @@ import {
   extractEmbed,
   pushIntervalSeconds,
   stateHash,
+  waitingActivityState,
 } from "../lib/activity";
 import type { City } from "../lib/types";
 
@@ -94,17 +95,20 @@ async function tick(city: City): Promise<boolean> {
       return false;
     }
     // Fresh downloads of old published results must not trigger stale phone updates.
-    if (
-      !activityEnabled() ||
-      Date.now() < POLLS_CLOSE ||
-      !results.totalVotes ||
-      resultsAreStale(city, results, new Date())
-    )
+    if (!activityEnabled() || resultsAreStale(city, results, new Date()))
       return true;
-    const state = activityState(results, city);
+    const waiting = Date.now() < POLLS_CLOSE || !results.totalVotes;
+    const state = waiting
+      ? waitingActivityState(city)
+      : activityState(results, city);
     const hash = stateHash(state);
     if (hash === previous.publishedHash) return true;
+    // Deliver the first count promptly to phones already following the waiting card.
+    const firstResults =
+      !waiting &&
+      previous.publishedHash === stateHash(waitingActivityState(city));
     if (
+      !firstResults &&
       previous.publishedAt &&
       Date.now() - previous.publishedAt.getTime() < pushIntervalSeconds() * 1000
     )

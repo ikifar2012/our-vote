@@ -422,8 +422,10 @@ export function Election() {
             <DialogTitle>Follow {selectedElection.name}</DialogTitle>
             <DialogDescription>
               {activity?.status === "ready"
-                ? "Add the mayoral race to your Lock Screen."
-                : "Results begin October 26 at 8 p.m. ET."}
+                ? hasSelectedVotes
+                  ? "Add the mayoral race to your Lock Screen."
+                  : "Follow now. Your Live Activity will update when official results arrive."
+                : "Follow the mayoral race on your Lock Screen."}
             </DialogDescription>
           </DialogHeader>
           {activity?.status === "ready" && activity.embedUrl ? (
@@ -447,14 +449,20 @@ export function Election() {
                 {activity.intervalMinutes} minutes when results change. A change
                 in candidates or photos may alert your phone.
               </p>
+              {!hasSelectedVotes && (
+                <p className="dialog-note">
+                  Your Live Activity will show “Waiting for official results”
+                  until counting begins. You won’t need to add it again.
+                </p>
+              )}
             </>
           ) : (
             <p className="dialog-note">
               {hasSelectedVotes
                 ? "Lock Screen tracking is temporarily unavailable. The latest available results are on this page."
                 : activity?.status === "waiting"
-                  ? "Tracking opens when the first votes arrive. Come back on election night to add it."
-                  : "Lock Screen tracking isn’t available yet. Check back on election night."}
+                  ? "The follow button is being prepared. This page checks again automatically."
+                  : "Lock Screen tracking is temporarily unavailable. Please try again shortly."}
             </p>
           )}
           {!hasSelectedVotes && (
