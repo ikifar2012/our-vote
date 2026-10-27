@@ -2,6 +2,14 @@ import { ELECTIONS, POLLS_CLOSE, pollDelayMs } from "./elections";
 import { SourceError } from "./source-http";
 import type { City, Results } from "./types";
 
+export function resultsFullyReported(results: Results | null) {
+  return Boolean(
+    results?.totalVotes &&
+    results.polls > 0 &&
+    results.pollsReceived === results.polls,
+  );
+}
+
 export function nextFetchAt(city: City, cacheSeconds = 0, now = Date.now()) {
   const delay = Math.max(pollDelayMs(city, now), cacheSeconds * 1000);
   return new Date(now + delay + Math.floor(Math.random() * 5000));
@@ -42,9 +50,10 @@ export function resultsAreStale(
       ? 6 * 60 * 60_000 + 60_000
       : ELECTIONS[city].staleSeconds * 1000;
   if (!checkedAt || Date.now() - checkedAt.getTime() > threshold) return true;
-  // A successful download must not make old published results appear current.
+  // Old incomplete counts can be delayed; a fully reported count need not keep changing.
   return Boolean(
     results?.totalVotes &&
+    !resultsFullyReported(results) &&
     results.sourceUpdatedAt &&
     Date.now() - Date.parse(results.sourceUpdatedAt) > 10 * 60_000,
   );

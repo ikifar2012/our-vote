@@ -9,6 +9,7 @@ import {
   failureState,
   nextFetchAt,
   resultsAreStale,
+  resultsFullyReported,
 } from "../lib/collection";
 import {
   activityEnabled,
@@ -23,6 +24,7 @@ import type { City } from "../lib/types";
 
 loadEnvConfig(process.cwd());
 const db = getDb();
+const MAX_FINAL_RETRIES = 3;
 if (!db) throw new Error("Set DATABASE_URL before starting the worker.");
 const requestedCity = process.argv.includes("--city")
   ? process.argv[process.argv.indexOf("--city") + 1]
@@ -94,7 +96,7 @@ async function tick(city: City): Promise<boolean> {
       );
       return false;
     }
-    // Fresh downloads of old published results must not trigger stale phone updates.
+    // Incomplete counts must be fresh; fully reported counts remain valid while fetches succeed.
     if (!activityEnabled() || resultsAreStale(city, results, new Date()))
       return true;
     const waiting = Date.now() < POLLS_CLOSE || !results.totalVotes;
@@ -102,18 +104,39 @@ async function tick(city: City): Promise<boolean> {
       ? waitingActivityState(city)
       : activityState(results, city);
     const hash = stateHash(state);
-    if (hash === previous.publishedHash) return true;
+    const unchanged = hash === previous.publishedHash;
+    const finalRetry =
+      unchanged &&
+      !waiting &&
+      resultsFullyReported(results) &&
+      previous.finalDeliveryRetries < MAX_FINAL_RETRIES;
+    if (unchanged && !finalRetry) return true;
     // Deliver the first count promptly to phones already following the waiting card.
     const firstResults =
       !waiting &&
       previous.publishedHash === stateHash(waitingActivityState(city));
+    const lastAttempt = previous.lastDeliveryAttemptAt ?? previous.publishedAt;
+    const bypassCooldown =
+      firstResults &&
+      (!lastAttempt ||
+        (previous.publishedAt && lastAttempt <= previous.publishedAt));
     if (
-      !firstResults &&
-      previous.publishedAt &&
-      Date.now() - previous.publishedAt.getTime() < pushIntervalSeconds() * 1000
+      !bypassCooldown &&
+      lastAttempt &&
+      Date.now() - lastAttempt.getTime() < pushIntervalSeconds() * 1000
     )
       return true;
     try {
+      // Persist attempts even on provider errors; retries stay spaced and bounded.
+      await tx
+        .update(elections)
+        .set({
+          lastDeliveryAttemptAt: new Date(),
+          ...(finalRetry
+            ? { finalDeliveryRetries: previous.finalDeliveryRetries + 1 }
+            : {}),
+        })
+        .where(eq(elections.id, election.id));
       if (!previous.activityId) {
         const started = await activityRequest("start", {
           widgetContainerId: election.container,
@@ -135,15 +158,19 @@ async function tick(city: City): Promise<boolean> {
             embedUrl: extractEmbed(started),
             publishedHash: hash,
             publishedAt: new Date(),
+            finalDeliveryRetries: 0,
           })
           .where(eq(elections.id, election.id));
       } else {
-        await activityRequest("update", {
+        const sent = await activityRequest("update", {
           widgetContainerId: election.container,
           group: election.group,
           priority: 5,
           state,
         });
+        console.log(
+          `${election.name}: ${finalRetry ? `final result retry ${previous.finalDeliveryRetries + 1}/${MAX_FINAL_RETRIES}` : "activity update"}; provider targeted ${typeof sent.targeted === "number" ? sent.targeted : "unknown"} activities.`,
+        );
         await activityRequest("update", {
           widgetContainerId: election.container,
           activityId: previous.activityId,
@@ -152,7 +179,13 @@ async function tick(city: City): Promise<boolean> {
         });
         await tx
           .update(elections)
-          .set({ publishedHash: hash, publishedAt: new Date() })
+          .set({
+            publishedHash: hash,
+            publishedAt: new Date(),
+            finalDeliveryRetries: finalRetry
+              ? previous.finalDeliveryRetries + 1
+              : 0,
+          })
           .where(eq(elections.id, election.id));
       }
     } catch (error) {
