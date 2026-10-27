@@ -6,6 +6,7 @@ import {
   pushIntervalSeconds,
 } from "@/lib/activity";
 import { collectionIsComplete, resultsAreStale } from "@/lib/collection";
+import { activityEndAt } from "@/lib/activity-lifecycle";
 import { isCity } from "@/lib/elections";
 import { getPublicResults, readElection } from "@/lib/results";
 import type { ActivityStatus, City, PublicResults } from "@/lib/types";
@@ -28,11 +29,23 @@ export async function getLiveActivity(
   const body: ActivityStatus = {
     status: "unavailable",
     embedUrl: null,
+    endsAt: null,
     intervalMinutes: pushIntervalSeconds() / 60,
   };
   try {
+    const row = await readElection(city);
+    const endAt = activityEndAt(
+      row?.fullyReportedAt ??
+        (collectionIsComplete(row?.results ?? null)
+          ? (row?.checkedAt ?? null)
+          : null),
+    );
+    body.endsAt = endAt?.toISOString() ?? null;
+    if (row?.activityEndedAt || (endAt && Date.now() >= endAt.getTime())) {
+      body.status = "ended";
+      return body;
+    }
     if (activityEnabled()) {
-      const row = await readElection(city);
       if (
         row &&
         ((!collectionIsComplete(row.results) &&

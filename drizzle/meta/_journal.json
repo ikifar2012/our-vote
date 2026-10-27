@@ -29,6 +29,13 @@
       "when": 1793067049195,
       "tag": "0003_delivery_retry_payload",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793070430724,
+      "tag": "0004_activity_auto_end",
+      "breakpoints": true
     }
   ]
 }

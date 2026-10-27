@@ -149,6 +149,34 @@ export function Election() {
     };
   }, []);
 
+  useEffect(() => {
+    const deadlines = Object.values(activities)
+      .filter((value) => value?.status === "ready" && value.endsAt)
+      .map((value) => Date.parse(value!.endsAt!))
+      .filter(Number.isFinite);
+    if (!deadlines.length) return;
+    const timer = setTimeout(
+      () => {
+        const now = Date.now();
+        setActivities((previous) => {
+          const updated = { ...previous };
+          for (const city of CITIES) {
+            const value = updated[city];
+            if (
+              value?.status === "ready" &&
+              value.endsAt &&
+              Date.parse(value.endsAt) <= now
+            )
+              updated[city] = { ...value, status: "ended", embedUrl: null };
+          }
+          return updated;
+        });
+      },
+      Math.max(0, Math.min(...deadlines) - Date.now()),
+    );
+    return () => clearTimeout(timer);
+  }, [activities]);
+
   const selectedElection = ELECTIONS[selectedCity];
   const activity = activities[selectedCity];
   const hasSelectedVotes = Boolean(data[selectedCity]?.results?.totalVotes);
@@ -425,7 +453,9 @@ export function Election() {
                 ? hasSelectedVotes
                   ? "Add the mayoral race to your Lock Screen."
                   : "Follow now. Your Live Activity will update when official results arrive."
-                : "Follow the mayoral race on your Lock Screen."}
+                : activity?.status === "ended"
+                  ? "Live tracking has ended. Results remain available on this page."
+                  : "Follow the mayoral race on your Lock Screen."}
             </DialogDescription>
           </DialogHeader>
           {activity?.status === "ready" && activity.embedUrl ? (
@@ -449,6 +479,10 @@ export function Election() {
                 {activity.intervalMinutes} minutes when results change. A change
                 in candidates or photos may alert your phone.
               </p>
+              <p className="dialog-note">
+                Live tracking ends five minutes after all polls or tabulators
+                have reported.
+              </p>
               {!hasSelectedVotes && (
                 <p className="dialog-note">
                   Your Live Activity will show “Waiting for official results”
@@ -458,11 +492,13 @@ export function Election() {
             </>
           ) : (
             <p className="dialog-note">
-              {hasSelectedVotes
-                ? "Lock Screen tracking is temporarily unavailable. The latest available results are on this page."
-                : activity?.status === "waiting"
-                  ? "The follow button is being prepared. This page checks again automatically."
-                  : "Lock Screen tracking is temporarily unavailable. Please try again shortly."}
+              {activity?.status === "ended"
+                ? "Live tracking has ended. You can still view the saved results on this site."
+                : hasSelectedVotes
+                  ? "Lock Screen tracking is temporarily unavailable. The latest available results are on this page."
+                  : activity?.status === "waiting"
+                    ? "The follow button is being prepared. This page checks again automatically."
+                    : "Lock Screen tracking is temporarily unavailable. Please try again shortly."}
             </p>
           )}
           {!hasSelectedVotes && (

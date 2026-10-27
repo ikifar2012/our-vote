@@ -20,8 +20,9 @@ export type PublicResults = {
   stale: boolean;
 };
 export type ActivityStatus = {
-  status: "ready" | "waiting" | "unavailable";
+  status: "ready" | "waiting" | "unavailable" | "ended";
   embedUrl: string | null;
+  endsAt: string | null;
   intervalMinutes: number;
 };
 export type SourceValidators = {

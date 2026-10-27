@@ -25,6 +25,7 @@ import {
 import type { City } from "../lib/types";
 import { SourceError } from "../lib/source-http";
 import { errorFields, logEvent } from "../lib/worker-log";
+import { activityEndAt, activityEndRetryAt } from "../lib/activity-lifecycle";
 
 loadEnvConfig(process.cwd());
 const db = getDb();
@@ -218,6 +219,41 @@ async function tick(city: City): Promise<boolean> {
         touched = true;
       }
       if (!results) return false;
+      let fullyReportedAt = previous.fullyReportedAt;
+      if (collectionIsComplete(results) && !fullyReportedAt) {
+        fullyReportedAt = checkedAt ?? new Date();
+        await tx
+          .update(elections)
+          .set({ fullyReportedAt })
+          .where(eq(elections.id, election.id));
+        touched = true;
+        logEvent("activity.end.scheduled", {
+          ...context,
+          fullyReportedAt: fullyReportedAt.toISOString(),
+          endsAt: activityEndAt(fullyReportedAt)?.toISOString(),
+          commitPending: true,
+        });
+      } else if (
+        !collectionIsComplete(results) &&
+        fullyReportedAt &&
+        !previous.activityEndedAt
+      ) {
+        fullyReportedAt = null;
+        await tx
+          .update(elections)
+          .set({
+            fullyReportedAt: null,
+            lastActivityEndAttemptAt: null,
+            activityEndAttempts: 0,
+          })
+          .where(eq(elections.id, election.id));
+        touched = true;
+        logEvent("activity.end.cancelled", {
+          ...context,
+          reason: "count_no_longer_fully_reported",
+          commitPending: true,
+        });
+      }
       if (collectionIsComplete(results) && !completedReported.has(city)) {
         completedReported.add(city);
         logEvent("source.collection.completed", {
@@ -230,6 +266,94 @@ async function tick(city: City): Promise<boolean> {
           nextFetchAt: null,
           commitPending: touched,
         });
+      }
+      if (previous.activityEndedAt) return true;
+      const endsAt = activityEndAt(fullyReportedAt);
+      if (endsAt && Date.now() >= endsAt.getTime()) {
+        if (!process.env.WEBACTIVITY_API_KEY) {
+          logDeliverySkip(
+            city,
+            {
+              ...context,
+              reason: "end_requires_provider_key",
+              endsAt: endsAt.toISOString(),
+            },
+            true,
+          );
+          return false;
+        }
+        const retryAt = activityEndRetryAt(
+          previous.lastActivityEndAttemptAt,
+          previous.activityEndAttempts,
+        );
+        if (retryAt && Date.now() < retryAt.getTime()) {
+          logDeliverySkip(
+            city,
+            {
+              ...context,
+              reason: "end_retry_backoff",
+              nextEligibleAt: retryAt.toISOString(),
+            },
+            true,
+          );
+          return true;
+        }
+        const attemptId = randomUUID();
+        const attemptNumber = previous.activityEndAttempts + 1;
+        await tx
+          .update(elections)
+          .set({
+            lastActivityEndAttemptAt: new Date(),
+            activityEndAttempts: attemptNumber,
+          })
+          .where(eq(elections.id, election.id));
+        touched = true;
+        logEvent("activity.end.started", {
+          ...context,
+          attemptId,
+          attemptNumber,
+          endsAt: endsAt.toISOString(),
+        });
+        try {
+          await activityRequest(
+            "end",
+            { group: election.group, widgetContainerId: election.container },
+            { ...context, attemptId, target: "group" },
+          );
+          await tx
+            .update(elections)
+            .set({ activityEndedAt: new Date() })
+            .where(eq(elections.id, election.id));
+          logEvent("activity.end.accepted", {
+            ...context,
+            attemptId,
+            attemptNumber,
+            commitPending: true,
+            deliveryConfirmed: false,
+          });
+          return true;
+        } catch (error) {
+          logEvent(
+            "activity.end.failed",
+            {
+              ...errorFields(error),
+              ...(error instanceof ActivityRequestError
+                ? error.diagnostics
+                : {}),
+              ...context,
+              attemptId,
+              attemptNumber,
+              nextEligibleAt: activityEndRetryAt(
+                new Date(),
+                attemptNumber,
+              )?.toISOString(),
+              commitPending: true,
+              deliveryConfirmed: false,
+            },
+            "error",
+          );
+          return false;
+        }
       }
       // Delivery retries may use a completed snapshot without further source requests.
       if (!activityEnabled() || resultsAreStale(city, results, new Date())) {
@@ -285,13 +409,16 @@ async function tick(city: City): Promise<boolean> {
       const firstResults =
         !waiting &&
         previous.publishedHash === stateHash(waitingActivityState(city));
+      const firstFullyReported =
+        collectionIsComplete(results) && hash !== previous.publishedHash;
       const lastAttempt =
         previous.lastDeliveryAttemptAt ?? previous.publishedAt;
       const bypassCooldown =
-        firstResults &&
         !retry &&
-        (!lastAttempt ||
-          (previous.publishedAt && lastAttempt <= previous.publishedAt));
+        (firstFullyReported ||
+          (firstResults &&
+            (!lastAttempt ||
+              (previous.publishedAt && lastAttempt <= previous.publishedAt))));
       if (
         !bypassCooldown &&
         lastAttempt &&
@@ -316,7 +443,13 @@ async function tick(city: City): Promise<boolean> {
         ...decision,
         attemptId,
         attemptNumber: deliveryRetries + 1,
-        reason: retry ? "retry" : firstResults ? "first_results" : "new_state",
+        reason: retry
+          ? "retry"
+          : firstResults
+            ? "first_results"
+            : firstFullyReported
+              ? "fully_reported"
+              : "new_state",
         operation: previous.activityId ? "update" : "start",
         group: election.group,
         widgetContainerId: election.container,
