@@ -94,6 +94,17 @@ Run `bun run test:setup`, restart the web server, and open `/test`. Sign in with
 - All polls/tabulators reporting is labelled “Reported”, not “Winner”. Results remain unofficial until certified. The worker does not automatically remove the final card. iOS stops ordinary updates after eight hours; WebActivity can restart an older activity with an alert.
 - Free-plan exhaustion can stop phone delivery. VPS hosting does not remove this provider limit. At five-minute intervals, 250 phones receiving updates for three hours is about 9,000 pushes, before later results/end calls or other usage. No automatic paid upgrade is implemented. Website results keep working independently.
 
+## Diagnose phone delivery
+
+The worker writes JSON log lines to Dokploy's application logs (or `docker compose logs worker`). Each line has a timestamp, process instance ID, city, and event. Source fetches and delivery decisions share a `cycleId`; each delivery has an `attemptId`, payload hash, and a separate `requestId` for each provider call.
+
+- `source.snapshot.staged` shows the source sequence, publication/retrieval times, polling schedule, exact leading vote totals, and reporting percentage. `worker.cycle.committed` confirms the transaction was saved; `worker.cycle.rolled_back` means staged database changes were not saved.
+- `delivery.skipped` explains `cooldown` (including the next eligible time), `retry_budget_exhausted`, `activities_disabled`, or `source_stale`. `delivery.attempt.started` identifies new counts versus retries and the attempt number.
+- `provider.request.accepted` records HTTP status, duration, provider request ID when available, targeted activity count, and unknown ID count. `target: "group"` is the call intended for existing followers; `target: "template"` updates the reusable template. A group response targeting zero activities is logged as a warning. Acceptance or a positive target count is **not confirmation that a phone received or displayed the update**.
+- `provider.request.failed` distinguishes HTTP errors, provider rejection, unreadable responses, and network errors/timeouts. It records safe provider error codes such as `FREE_TIER_LIMIT_REACHED`, without raw response bodies. Correlate the provider's request ID with its delivery records if the API accepted a group update but a phone stayed behind; our server cannot independently observe receipt on the device.
+
+API keys, database connection strings, test access tokens, request headers, raw request/response bodies, and phone push tokens are not logged. Set `WORKER_LOG_LEVEL=debug` and restart only when routine `fetch_not_due` or `lock_busy` scheduling decisions are needed; normal collection and delivery diagnostics are on by default.
+
 ## Candidate photos
 
 Before votes arrive, both city dialogs show candidate rosters with available portraits. Toronto’s remaining names are in an expandable list. Saved feed snapshots take precedence over the fallback rosters in `lib/candidates.ts`; Toronto’s fallback was checked against the official mayoral feed on October 20, 2026. Keep it current if the City changes the list. Roster display does not fetch upstream or select leaders.
