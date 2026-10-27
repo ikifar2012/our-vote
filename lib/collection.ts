@@ -10,6 +10,13 @@ export function resultsFullyReported(results: Results | null) {
   );
 }
 
+export function collectionIsComplete(
+  results: Results | null,
+  now = Date.now(),
+) {
+  return now >= POLLS_CLOSE && resultsFullyReported(results);
+}
+
 export function nextFetchAt(city: City, cacheSeconds = 0, now = Date.now()) {
   const delay = Math.max(pollDelayMs(city, now), cacheSeconds * 1000);
   return new Date(now + delay + Math.floor(Math.random() * 5000));
@@ -45,11 +52,14 @@ export function resultsAreStale(
   results: Results | null,
   checkedAt: Date | null,
 ) {
+  if (!checkedAt) return true;
+  // Completed collection intentionally stops fetching; retain its last verified snapshot.
+  if (collectionIsComplete(results)) return false;
   const threshold =
     Date.now() < POLLS_CLOSE
       ? 6 * 60 * 60_000 + 60_000
       : ELECTIONS[city].staleSeconds * 1000;
-  if (!checkedAt || Date.now() - checkedAt.getTime() > threshold) return true;
+  if (Date.now() - checkedAt.getTime() > threshold) return true;
   // Old incomplete counts can be delayed; a fully reported count need not keep changing.
   return Boolean(
     results?.totalVotes &&

@@ -5,7 +5,7 @@ import {
   activityEnabled,
   pushIntervalSeconds,
 } from "@/lib/activity";
-import { resultsAreStale } from "@/lib/collection";
+import { collectionIsComplete, resultsAreStale } from "@/lib/collection";
 import { isCity } from "@/lib/elections";
 import { getPublicResults, readElection } from "@/lib/results";
 import type { ActivityStatus, City, PublicResults } from "@/lib/types";
@@ -35,8 +35,8 @@ export async function getLiveActivity(
       const row = await readElection(city);
       if (
         row &&
-        (row.collectionPaused ||
-          row.failureCount ||
+        ((!collectionIsComplete(row.results) &&
+          (row.collectionPaused || row.failureCount)) ||
           resultsAreStale(city, row.results, row.checkedAt))
       )
         return body;

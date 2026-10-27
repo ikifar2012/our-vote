@@ -7,6 +7,7 @@ import { CITIES, ELECTIONS, isCity, POLLS_CLOSE } from "../lib/elections";
 import { fetchResults } from "../lib/feeds";
 import {
   assertNotOlder,
+  collectionIsComplete,
   failureState,
   nextFetchAt,
   resultsAreStale,
@@ -28,6 +29,11 @@ import { errorFields, logEvent } from "../lib/worker-log";
 loadEnvConfig(process.cwd());
 const db = getDb();
 const MAX_DELIVERY_RETRIES = 3;
+const refreshCompleted = process.argv.includes("--refresh-completed");
+if (refreshCompleted && !process.argv.includes("--once"))
+  throw new Error(
+    "Use --refresh-completed with --once to recheck a completed city.",
+  );
 if (!db) throw new Error("Set DATABASE_URL before starting the worker.");
 const requestedCity = process.argv.includes("--city")
   ? process.argv[process.argv.indexOf("--city") + 1]
@@ -38,6 +44,25 @@ const cities: readonly City[] = requestedCity
   ? [requestedCity as City]
   : CITIES;
 const pausedReported = new Set<City>();
+const completedReported = new Set<City>();
+const completedDecisions = new Map<City, string>();
+
+function logDeliverySkip(
+  city: City,
+  fields: Record<string, unknown>,
+  completed: boolean,
+) {
+  const key = JSON.stringify([
+    fields.reason,
+    fields.payloadHash,
+    fields.retriesUsed,
+    fields.nextEligibleAt,
+  ]);
+  const repeated = completed && completedDecisions.get(city) === key;
+  logEvent("delivery.skipped", fields, repeated ? "debug" : "info");
+  if (completed) completedDecisions.set(city, key);
+  else completedDecisions.delete(city);
+}
 
 async function tick(city: City): Promise<boolean> {
   const election = ELECTIONS[city];
@@ -66,119 +91,157 @@ async function tick(city: City): Promise<boolean> {
         .select()
         .from(elections)
         .where(eq(elections.id, election.id));
-      if (previous.collectionPaused) {
-        if (!pausedReported.has(city)) {
-          pausedReported.add(city);
+      let results = previous.results;
+      let checkedAt = previous.checkedAt;
+      const previouslyCompleted =
+        Boolean(checkedAt) &&
+        collectionIsComplete(results) &&
+        !refreshCompleted;
+      if (!previouslyCompleted) {
+        completedReported.delete(city);
+        if (previous.collectionPaused) {
+          if (!pausedReported.has(city)) {
+            pausedReported.add(city);
+            logEvent(
+              "source.paused",
+              {
+                ...context,
+                reason: "collection_paused",
+                failureCount: previous.failureCount,
+              },
+              "error",
+            );
+          }
+          return false;
+        }
+        pausedReported.delete(city);
+        if (
+          previous.nextFetchAt &&
+          Date.now() < previous.nextFetchAt.getTime()
+        ) {
           logEvent(
-            "source.paused",
+            "worker.cycle.skipped",
             {
               ...context,
-              reason: "collection_paused",
-              failureCount: previous.failureCount,
+              reason: "fetch_not_due",
+              nextFetchAt: previous.nextFetchAt.toISOString(),
+            },
+            "debug",
+          );
+          return true;
+        }
+        const fetchStarted = performance.now();
+        logEvent("source.fetch.started", context);
+        try {
+          const feed = await fetchResults(city, {
+            etag: previous.etag,
+            lastModified: previous.lastModified,
+          });
+          if (feed.results) {
+            assertNotOlder(city, feed.results, previous.results);
+            results = feed.results;
+          }
+          if (!results)
+            throw new Error("No initial results snapshot was returned");
+          checkedAt = new Date();
+          const fetchDue = collectionIsComplete(results)
+            ? null
+            : nextFetchAt(city, feed.cacheSeconds);
+          await tx
+            .update(elections)
+            .set({
+              results,
+              checkedAt,
+              etag: feed.etag,
+              lastModified: feed.lastModified,
+              nextFetchAt: fetchDue,
+              failureCount: 0,
+              lastError: null,
+            })
+            .where(eq(elections.id, election.id));
+          touched = true;
+          logEvent("source.snapshot.staged", {
+            ...context,
+            sequence: results.sequence,
+            sourceUpdatedAt: results.sourceUpdatedAt,
+            checkedAt: checkedAt.toISOString(),
+            nextFetchAt: fetchDue?.toISOString() ?? null,
+            durationMs: Math.round(performance.now() - fetchStarted),
+            sourceResponse: feed.results ? "snapshot_received" : "not_modified",
+            cacheSeconds: feed.cacheSeconds,
+            totalVotes: results.totalVotes,
+            pollsReceived: results.pollsReceived,
+            polls: results.polls,
+            reportingPercent: Math.floor(
+              (results.pollsReceived / Math.max(1, results.polls)) * 100,
+            ),
+            leaders: results.totalVotes
+              ? results.candidates
+                  .slice(0, 2)
+                  .map(({ name, votesReceived }) => ({ name, votesReceived }))
+              : [],
+            commitPending: true,
+          });
+        } catch (error) {
+          const failure = failureState(city, previous.failureCount, error);
+          await tx
+            .update(elections)
+            .set(failure)
+            .where(eq(elections.id, election.id));
+          touched = true;
+          logEvent(
+            "source.fetch.failed",
+            {
+              ...context,
+              ...errorFields(error),
+              reason:
+                error instanceof SourceError
+                  ? error.message
+                  : "Results retrieval or validation failed",
+              httpStatus:
+                error instanceof SourceError ? error.status : undefined,
+              durationMs: Math.round(performance.now() - fetchStarted),
+              failureCount: failure.failureCount,
+              collectionPaused: failure.collectionPaused,
+              nextFetchAt: failure.nextFetchAt.toISOString(),
+              commitPending: true,
             },
             "error",
           );
+          return false;
         }
-        return false;
-      }
-      pausedReported.delete(city);
-      if (previous.nextFetchAt && Date.now() < previous.nextFetchAt.getTime()) {
-        logEvent(
-          "worker.cycle.skipped",
-          {
-            ...context,
-            reason: "fetch_not_due",
-            nextFetchAt: previous.nextFetchAt.toISOString(),
-          },
-          "debug",
-        );
-        return true;
-      }
-      let results = previous.results;
-      const fetchStarted = performance.now();
-      logEvent("source.fetch.started", context);
-      try {
-        const feed = await fetchResults(city, {
-          etag: previous.etag,
-          lastModified: previous.lastModified,
-        });
-        if (feed.results) {
-          assertNotOlder(city, feed.results, previous.results);
-          results = feed.results;
-        }
-        if (!results)
-          throw new Error("No initial results snapshot was returned");
-        const checkedAt = new Date();
-        const fetchDue = nextFetchAt(city, feed.cacheSeconds);
+      } else if (previous.nextFetchAt) {
         await tx
           .update(elections)
-          .set({
-            results,
-            checkedAt,
-            etag: feed.etag,
-            lastModified: feed.lastModified,
-            nextFetchAt: fetchDue,
-            failureCount: 0,
-            lastError: null,
-          })
+          .set({ nextFetchAt: null })
           .where(eq(elections.id, election.id));
         touched = true;
-        logEvent("source.snapshot.staged", {
+      }
+      if (!results) return false;
+      if (collectionIsComplete(results) && !completedReported.has(city)) {
+        completedReported.add(city);
+        logEvent("source.collection.completed", {
           ...context,
+          reason: "all_reporting_units_reported",
           sequence: results.sequence,
-          sourceUpdatedAt: results.sourceUpdatedAt,
-          checkedAt: checkedAt.toISOString(),
-          nextFetchAt: fetchDue.toISOString(),
-          durationMs: Math.round(performance.now() - fetchStarted),
-          sourceResponse: feed.results ? "snapshot_received" : "not_modified",
-          cacheSeconds: feed.cacheSeconds,
-          totalVotes: results.totalVotes,
           pollsReceived: results.pollsReceived,
           polls: results.polls,
-          reportingPercent: Math.floor(
-            (results.pollsReceived / Math.max(1, results.polls)) * 100,
-          ),
-          leaders: results.totalVotes
-            ? results.candidates
-                .slice(0, 2)
-                .map(({ name, votesReceived }) => ({ name, votesReceived }))
-            : [],
-          commitPending: true,
+          checkedAt: checkedAt?.toISOString(),
+          nextFetchAt: null,
+          commitPending: touched,
         });
-      } catch (error) {
-        const failure = failureState(city, previous.failureCount, error);
-        await tx
-          .update(elections)
-          .set(failure)
-          .where(eq(elections.id, election.id));
-        touched = true;
-        logEvent(
-          "source.fetch.failed",
+      }
+      // Delivery retries may use a completed snapshot without further source requests.
+      if (!activityEnabled() || resultsAreStale(city, results, new Date())) {
+        logDeliverySkip(
+          city,
           {
             ...context,
-            ...errorFields(error),
-            reason:
-              error instanceof SourceError
-                ? error.message
-                : "Results retrieval or validation failed",
-            httpStatus: error instanceof SourceError ? error.status : undefined,
-            durationMs: Math.round(performance.now() - fetchStarted),
-            failureCount: failure.failureCount,
-            collectionPaused: failure.collectionPaused,
-            nextFetchAt: failure.nextFetchAt.toISOString(),
-            commitPending: true,
+            sequence: results.sequence,
+            reason: !activityEnabled() ? "activities_disabled" : "source_stale",
           },
-          "error",
+          collectionIsComplete(results),
         );
-        return false;
-      }
-      // Incomplete counts must be fresh; fully reported counts remain valid while fetches succeed.
-      if (!activityEnabled() || resultsAreStale(city, results, new Date())) {
-        logEvent("delivery.skipped", {
-          ...context,
-          sequence: results.sequence,
-          reason: !activityEnabled() ? "activities_disabled" : "source_stale",
-        });
         return true;
       }
       const waiting = Date.now() < POLLS_CLOSE || !results.totalVotes;
@@ -207,10 +270,14 @@ async function tick(city: City): Promise<boolean> {
             ),
       };
       if (retry && previous.deliveryRetries >= MAX_DELIVERY_RETRIES) {
-        logEvent("delivery.skipped", {
-          ...decision,
-          reason: "retry_budget_exhausted",
-        });
+        logDeliverySkip(
+          city,
+          {
+            ...decision,
+            reason: "retry_budget_exhausted",
+          },
+          collectionIsComplete(results),
+        );
         return true;
       }
       const deliveryRetries = retry ? previous.deliveryRetries + 1 : 0;
@@ -230,13 +297,17 @@ async function tick(city: City): Promise<boolean> {
         lastAttempt &&
         Date.now() - lastAttempt.getTime() < pushIntervalSeconds() * 1000
       ) {
-        logEvent("delivery.skipped", {
-          ...decision,
-          reason: "cooldown",
-          nextEligibleAt: new Date(
-            lastAttempt.getTime() + pushIntervalSeconds() * 1000,
-          ).toISOString(),
-        });
+        logDeliverySkip(
+          city,
+          {
+            ...decision,
+            reason: "cooldown",
+            nextEligibleAt: new Date(
+              lastAttempt.getTime() + pushIntervalSeconds() * 1000,
+            ).toISOString(),
+          },
+          collectionIsComplete(results),
+        );
         return true;
       }
       const attemptId = randomUUID();
@@ -354,6 +425,7 @@ async function tick(city: City): Promise<boolean> {
       return succeeded;
     })
     .catch((error) => {
+      completedReported.delete(city);
       logEvent(
         "worker.cycle.rolled_back",
         { ...context, ...errorFields(error) },
@@ -380,6 +452,7 @@ async function main() {
     providerKeyConfigured: Boolean(process.env.WEBACTIVITY_API_KEY),
     pushIntervalSeconds: pushIntervalSeconds(),
     retryLimit: MAX_DELIVERY_RETRIES,
+    refreshCompleted,
   });
   do {
     const started = Date.now();

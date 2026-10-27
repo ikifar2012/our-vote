@@ -4,6 +4,7 @@ import { elections } from "../db/schema";
 import { ELECTIONS } from "./elections";
 import {
   assertNotOlder,
+  collectionIsComplete,
   failureState,
   nextFetchAt,
   resultsAreStale,
@@ -46,7 +47,8 @@ export async function getPublicResults(
       results: row?.results ?? null,
       checkedAt: row?.checkedAt?.toISOString() ?? null,
       stale:
-        Boolean(row?.collectionPaused || row?.failureCount) ||
+        (!collectionIsComplete(row?.results ?? null) &&
+          Boolean(row?.collectionPaused || row?.failureCount)) ||
         resultsAreStale(city, row?.results ?? null, row?.checkedAt ?? null),
     };
   }
@@ -70,6 +72,7 @@ export async function getPublicResults(
   }
   const preview = cached;
   if (
+    !collectionIsComplete(preview.results) &&
     !preview.paused &&
     Date.now() >= preview.dueAt.getTime() &&
     !preview.pending
@@ -106,8 +109,8 @@ export async function getPublicResults(
     results: preview.results,
     checkedAt: preview.checkedAt?.toISOString() ?? null,
     stale:
-      preview.paused ||
-      preview.failures > 0 ||
+      (!collectionIsComplete(preview.results) &&
+        (preview.paused || preview.failures > 0)) ||
       resultsAreStale(city, preview.results, preview.checkedAt),
   };
 }
