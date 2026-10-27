@@ -44,6 +44,22 @@ For an upgrade: pull the code, run `docker compose up -d --build`, and inspect t
 
 The image contains the web server, worker, and migration entrypoints. Compose currently builds and uses `our-vote:local`; adding this workflow does not switch an existing deployment to GHCR or deploy it automatically. Package visibility is managed separately in GitHub Packages; a private package requires authentication to pull.
 
+## Dokploy with a single GHCR application
+
+Use `ghcr.io/ikifar2012/our-vote:main`, with the domain routed to container port **3000**. Leave the application's command override empty. The image's default command applies database migrations, then starts both the website and the results worker. If either process exits, the other is stopped and the container exits with an error so the platform can restart it. Normal container shutdown stops both processes. Docker Compose explicitly overrides this command because it already runs migrations and the worker as separate services.
+
+Create a PostgreSQL database in Dokploy and set these variables on the application (both processes inherit them):
+
+```dotenv
+DATABASE_URL=<PostgreSQL internal connection URL from Dokploy>
+SITE_URL=https://ourvote.mstep.dev
+LIVE_ACTIVITIES_ENABLED=true
+WEBACTIVITY_API_KEY=<your existing provider key>
+PUSH_INTERVAL_SECONDS=300
+```
+
+Keep credentials in Dokploy's environment settings. Redeploy after pulling the new image or changing variables. Startup logs should show **Database migrations applied**, **Starting web server**, and **Starting results worker**, followed by per-city fetch logs. Missing `DATABASE_URL` or failed migrations stop startup instead of serving an empty production site. Live Activity creation still waits for the first nonzero official results after polls close; the worker collects results even when Live Activities are disabled.
+
 ## Enable Lock Screen tracking
 
 The app is integration-ready; **a real WebActivity account, selected plan, API key, and phone verification are still required**. Deployment and real pushes have not been performed on your behalf.
